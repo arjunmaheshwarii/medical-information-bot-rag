@@ -1,3 +1,4 @@
+# Added basic PDF loader structure
 from langchain_community.document_loaders import PyPDFLoader
 import os
 
