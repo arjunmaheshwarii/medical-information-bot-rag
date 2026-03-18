@@ -12,6 +12,7 @@ def load_medical_pdfs(pdf_dir):
 
     for file in os.listdir(pdf_dir):
         if file.endswith(".pdf"):
+            print(f"Processing file: {file}")
             file_path = os.path.join(pdf_dir, file)
 
             try:
