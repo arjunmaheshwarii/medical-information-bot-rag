@@ -11,8 +11,13 @@ def create_vector_store(documents):
     return vector_store
 
 
-def search_vector_store(vector_store, query):
+def search_vector_store(vector_store, query, k=5):
     """
-    Perform similarity search.
+    Perform similarity search with configurable results.
     """
-    return vector_store.similarity_search(query, k=3)
+    results = vector_store.similarity_search(query, k=k)
+    
+    # debug: print number of results
+    print(f"Retrieved {len(results)} results")
+
+    return results
