@@ -1,14 +1,11 @@
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
 
-def create_vector_store(chunks):
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
 
-    vectorstore = FAISS.from_documents(
-        documents=chunks,
-        embedding=embeddings
-    )
-
-    return vectorstore
+def create_vector_store(documents):
+    """
+    Create FAISS vector store from documents.
+    """
+    embeddings = OpenAIEmbeddings()
+    vector_store = FAISS.from_documents(documents, embeddings)
+    return vector_store
