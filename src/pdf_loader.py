@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Added basic PDF loader structure
 from langchain_community.document_loaders import PyPDFLoader
 import os
@@ -28,3 +29,19 @@ if __name__ == "__main__":
     pdf_directory = "data/medical_pdfs"
     docs = load_medical_pdfs(pdf_directory)
     print(f"Loaded {len(docs)} pages from medical PDFs")
+=======
+from langchain_community.document_loaders import PyPDFLoader
+import os
+
+def load_medical_pdfs(pdf_dir):
+    documents = []
+    for file in os.listdir(pdf_dir):
+        if file.endswith(".pdf"):
+            loader = PyPDFLoader(os.path.join(pdf_dir, file))
+            documents.extend(loader.load())
+    return documents
+
+if __name__ == "__main__":
+    docs = load_medical_pdfs("data/medical_pdfs")
+    print(f"Loaded {len(docs)} pages from medical PDFs")
+>>>>>>> arjun-dev
