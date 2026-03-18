@@ -29,7 +29,7 @@ def run_rag_query(query: str):
 
     # Vector store
     vectorstore = create_vector_store(chunks)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+    retriever = get_retriever(vectorstore)
 
     # Retrieve context
     retrieved_docs = retriever.invoke(query)
