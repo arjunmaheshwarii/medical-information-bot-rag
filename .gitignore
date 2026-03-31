@@ -2,3 +2,7 @@ __pycache__/
 .env
 *.db
 *.sqlite
+<<<<<<< HEAD
+*.pyc
+=======
+>>>>>>> arjun-dev
