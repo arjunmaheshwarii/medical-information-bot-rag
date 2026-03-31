@@ -1,7 +1,10 @@
 langchain
 langchain-community
-langchain-openai
 faiss-cpu
 pypdf
 streamlit
 python-dotenv
+sentence-transformers
+torch
+transformers
+numpy
