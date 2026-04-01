@@ -127,9 +127,11 @@ st.markdown("""
 
 def vector_store_exists():
     """Check if vector store exists."""
-    index_path = os.path.join(VECTOR_STORE_PATH, "faiss_index.faiss")
-    exists = os.path.exists(index_path)
-    return exists
+    # Check for the FAISS index file (without extension) and metadata
+    index_file = os.path.join(VECTOR_STORE_PATH.replace("/faiss_index", ""), "faiss_index.faiss")
+    pkl_file = os.path.join(VECTOR_STORE_PATH.replace("/faiss_index", ""), "faiss_index.pkl")
+    
+    return os.path.exists(index_file) and os.path.exists(pkl_file)
 
 
 @st.cache_resource
