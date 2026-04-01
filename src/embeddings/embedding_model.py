@@ -6,6 +6,9 @@ Converts text to numerical embeddings for semantic search.
 from typing import List, Union
 from sentence_transformers import SentenceTransformer
 from src.utils.config import EMBEDDINGS_MODEL_NAME, EMBEDDINGS_DIMENSION
+import torch
+from functools import lru_cache
+import hashlib
 
 
 class EmbeddingModel:
@@ -31,6 +34,20 @@ class EmbeddingModel:
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)
         self.embedding_dim = EMBEDDINGS_DIMENSION
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model.to(self.device)
+    
+    @lru_cache(maxsize=1000)
+    def _cached_encode(self, text_hash: str, text: str) -> List[float]:
+        """Cache embeddings by text hash."""
+        return self.model.encode([text], convert_to_tensor=False, show_progress_bar=False)[0].tolist()
+    
+    def _get_optimal_batch_size(self) -> int:
+        """Auto-detect optimal batch size based on available memory."""
+        if self.device == "cuda":
+            gpu_mem = torch.cuda.get_device_properties(0).total_memory
+            return min(128, max(8, gpu_mem // (1024**3)))  # Rough heuristic
+        return 32  # CPU default
         
     def embed(self, text: str) -> List[float]:
         """
@@ -42,19 +59,23 @@ class EmbeddingModel:
         Returns:
             List[float]: Embedding vector (384-dimensional for MiniLM)
         """
-        return self.model.encode(text, convert_to_tensor=False).tolist()
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        return self._cached_encode(text_hash, text)
     
-    def embed_batch(self, texts: List[str], batch_size: int = 128) -> List[List[float]]:
+    def embed_batch(self, texts: List[str], batch_size: int = None) -> List[List[float]]:
         """
         Embed multiple texts efficiently.
         
         Args:
             texts (List[str]): List of texts to embed
-            batch_size (int): Batch size for processing (default: 128)
+            batch_size (int): Batch size for processing (auto-detected if None)
             
         Returns:
             List[List[float]]: List of embedding vectors
         """
+        if batch_size is None:
+            batch_size = self._get_optimal_batch_size()
+        
         embeddings = self.model.encode(
             texts,
             batch_size=batch_size,
