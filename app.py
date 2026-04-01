@@ -115,6 +115,18 @@ def validate_uploaded_file(uploaded_file) -> tuple[bool, str]:
     return True, safe_name
 
 
+def sanitize_query(query: str) -> str:
+    """Sanitize user query input to prevent injection."""
+    if not query or not query.strip():
+        return ""
+    
+    # Remove potentially harmful characters, keep alphanumeric, spaces, basic punctuation
+    query = re.sub(r'[^\w\s\.\?\!\-\'\"]', '', query)
+    
+    # Limit length to prevent abuse
+    return query.strip()[:500]
+
+
 def main():
     """Main Streamlit app."""
     
@@ -155,14 +167,15 @@ def main():
             num_sources = st.slider("Number of sources:", 1, 10, 5)
         
         if st.button("🚀 Get Answer", use_container_width=True, type="primary"):
-            if not query.strip():
-                st.warning("⚠️ Please enter a question.")
+            sanitized_query = sanitize_query(query)
+            if not sanitized_query:
+                st.warning("⚠️ Please enter a valid question.")
             else:
                 with st.spinner("⏳ Processing your question..."):
                     try:
                         if include_sources:
                             answer, sources = pipeline.answer_query_with_context(
-                                query, 
+                                sanitized_query, 
                                 top_k=num_sources
                             )
                             
@@ -186,7 +199,7 @@ def main():
                                         unsafe_allow_html=True
                                     )
                         else:
-                            answer = pipeline.answer_query(query)
+                            answer = pipeline.answer_query(sanitized_query)
                             st.markdown("### 📖 Answer")
                             st.markdown(
                                 f'<div class="answer-box"><p>{answer}</p></div>',
