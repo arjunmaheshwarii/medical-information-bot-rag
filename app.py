@@ -130,9 +130,14 @@ def load_pipeline():
     """Load RAG pipeline (cached)."""
     try:
         return load_rag_pipeline(VECTOR_STORE_PATH)
-    except FileNotFoundError:
-        st.error("❌ Vector store index not found. Please index documents first.")
-        st.stop()
+    except (FileNotFoundError, RuntimeError, Exception):
+        return None
+
+
+def vector_store_exists():
+    """Check if vector store exists."""
+    index_path = os.path.join(VECTOR_STORE_PATH, "faiss_index.faiss")
+    return os.path.exists(index_path)
 
 
 def get_document_stats():
@@ -157,6 +162,47 @@ def main():
         </div>
     """, unsafe_allow_html=True)
     
+    # Check if vector store exists
+    if not vector_store_exists():
+        # Show setup page
+        st.warning("⚠️ Vector store not initialized", icon="⚠️")
+        st.markdown("""
+            ### 🚀 Getting Started
+            
+            Before you can ask questions, you need to index your medical documents.
+            
+            **Follow these steps:**
+            
+            #### 1️⃣ Add Medical PDFs
+            Upload your medical PDF files to the `data/medical_pdfs/` directory or use the CLI:
+            ```bash
+            cp your_medical_documents.pdf data/medical_pdfs/
+            ```
+            
+            #### 2️⃣ Index Documents
+            Run the indexing script in your terminal:
+            ```bash
+            python scripts/index_medical_documents.py
+            ```
+            
+            #### 3️⃣ Refresh the App
+            Once indexing is complete, refresh this page. You'll then be able to ask questions!
+            
+            ---
+            
+            ### 📊 About Vector Store
+            - **Location:** `data/vector_store/faiss_index.faiss`
+            - **Purpose:** Stores document embeddings for fast semantic search
+            - **Status:** ❌ Not initialized
+            
+            ### 💡 What's Next?
+            After indexing:
+            - 🔍 Use the **Ask Questions** page to query your documents
+            - 📚 View indexed documents in the **Documents** page
+            - 📤 Upload new PDFs in the **Upload PDF** page
+        """)
+        return
+    
     # Sidebar navigation
     st.sidebar.title("📋 Navigation")
     page = st.sidebar.radio(
@@ -174,6 +220,10 @@ def main():
     
     # Load pipeline
     pipeline = load_pipeline()
+    
+    if pipeline is None:
+        st.error("❌ Error loading pipeline. Please check your vector store.")
+        st.stop()
     
     # PAGE 1: Ask Questions
     if page == "🔍 Ask Questions":
