@@ -32,20 +32,20 @@ def example_1_basic_query():
         print("⚠ No PDFs found. Please add PDFs to data/medical_pdfs/")
         return
     
-    print(f"✓ Loaded {len(docs)} pages")
+    print(f"[OK] Loaded {len(docs)} pages")
     
     print("\n2. Chunking documents...")
     chunks = chunk_documents(docs, chunk_size=400, chunk_overlap=50)
-    print(f"✓ Created {len(chunks)} chunks")
+    print(f"[OK] Created {len(chunks)} chunks")
     
     print("\n3. Creating RAG pipeline...")
     pipeline = create_rag_pipeline(load_existing=False)
     pipeline.vector_store.create_from_documents(chunks)
-    print(f"✓ Vector store ready: {pipeline.vector_store.get_index_stats()}")
+    print(f"[OK] Vector store ready: {pipeline.vector_store.get_index_stats()}")
     
     print("\n4. Saving index...")
     pipeline.vector_store.save(VECTOR_STORE_PATH)
-    print(f"✓ Index saved to {VECTOR_STORE_PATH}")
+    print(f"[OK] Index saved to {VECTOR_STORE_PATH}")
     
     print("\n5. Answering query...")
     query = "What is the main topic of the medical documents?"
@@ -67,7 +67,7 @@ def example_2_with_sources():
     try:
         print("\n1. Loading saved index...")
         pipeline = load_rag_pipeline(VECTOR_STORE_PATH)
-        print("✓ Pipeline loaded")
+        print("[OK] Pipeline loaded")
     except FileNotFoundError:
         print("⚠ Index not found. Run Example 1 first.")
         return

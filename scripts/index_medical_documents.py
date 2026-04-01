@@ -29,16 +29,16 @@ def main():
     docs = load_medical_pdfs(MEDICAL_PDFS_DIR)
     
     if not docs:
-        print("\n❌ Error: No PDFs found!")
+        print("\n[ERROR] Error: No PDFs found!")
         print("Please add PDF files to", MEDICAL_PDFS_DIR)
         return
     
-    print(f"✓ Loaded {len(docs)} pages from {len(set(d.metadata.get('source') for d in docs))} documents")
+    print(f"[OK] Loaded {len(docs)} pages from {len(set(d.metadata.get('source') for d in docs))} documents")
     
     # Step 2: Chunk documents
     print("\n[2/4] Chunking documents...")
     chunks = chunk_documents(docs, chunk_size=400, chunk_overlap=50)
-    print(f"✓ Created {len(chunks)} chunks")
+    print(f"[OK] Created {len(chunks)} chunks")
     
     # Step 3: Create RAG pipeline
     print("\n[3/4] Creating RAG pipeline...")
@@ -46,7 +46,7 @@ def main():
     pipeline.vector_store.create_from_documents(chunks)
     
     stats = pipeline.vector_store.get_index_stats()
-    print(f"✓ Vector store created:")
+    print(f"[OK] Vector store created:")
     print(f"   - Vectors: {stats['num_vectors']}")
     print(f"   - Dimension: {stats['dimension']}")
     print(f"   - Documents: {stats['num_documents']}")
@@ -54,7 +54,7 @@ def main():
     # Step 4: Save index
     print("\n[4/4] Saving index to disk...")
     pipeline.vector_store.save(VECTOR_STORE_PATH)
-    print(f"✓ Index saved to: {VECTOR_STORE_PATH}")
+    print(f"[OK] Index saved to: {VECTOR_STORE_PATH}")
     
     # Summary
     print("\n" + "="*70)
