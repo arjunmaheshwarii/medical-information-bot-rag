@@ -1,66 +1,64 @@
-from dotenv import load_dotenv
-load_dotenv()
-
-from langchain_community.llms import HuggingFacePipeline
-from transformers import pipeline
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-
-from pdf_loader import load_medical_pdfs
-from chunking import chunk_documents
-from vector_store import create_vector_store
-
-
-def run_rag_query(query: str):
-    # Load PDFs
-    docs = load_medical_pdfs("data/medical_pdfs")
-
-    # Chunk documents
-    chunks = chunk_documents(docs)
-
-    # Vector store
-    vectorstore = create_vector_store(chunks)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-
-    # Retrieve context
-    retrieved_docs = retriever.invoke(query)
-    context = "\n\n".join(doc.page_content for doc in retrieved_docs)
-
-    # Prompt
-    prompt = PromptTemplate.from_template(
-        """
-You are a medical assistant.
-Answer using ONLY the context below.
-
-Context:
-{context}
-
-Question:
-{question}
 """
-    )
+Convenience wrapper around RAG pipeline.
+For backward compatibility and easy use.
+"""
 
-    # LLM (FREE)
-    pipe = pipeline(
-        "text-generation",
-        model="google/flan-t5-base",
-        max_new_tokens=200
-    )
+from src.pdf_loader import load_medical_pdfs
+from src.chunking import chunk_documents
+from src.rag.pipeline_factory import create_rag_pipeline
+from src.utils.config import MEDICAL_PDFS_DIR, VECTOR_STORE_PATH
 
-    llm = HuggingFacePipeline(pipeline=pipe)
 
-    # Chain
-    chain = prompt | llm | StrOutputParser()
-
-    response = chain.invoke({
-        "context": context,
-        "question": query
-    })
-
-    return response
+def run_rag_query(query: str, load_from_disk: bool = False) -> str:
+    """
+    Run a complete RAG query from scratch or from saved index.
+    
+    This is a convenience function for simple use cases.
+    For more control, use RAGPipeline directly.
+    
+    Args:
+        query (str): User question
+        load_from_disk (bool): If True, load existing index.
+                              If False, build from PDFs in data/medical_pdfs/
+    
+    Returns:
+        str: Generated answer
+    
+    Example:
+        >>> answer = run_rag_query("What is diabetes?", load_from_disk=True)
+        >>> print(answer)
+    """
+    if load_from_disk:
+        # Load existing pipeline
+        from src.rag.pipeline_factory import load_rag_pipeline
+        pipeline = load_rag_pipeline(VECTOR_STORE_PATH)
+    else:
+        # Build from PDFs
+        print("Loading medical PDFs...")
+        docs = load_medical_pdfs(MEDICAL_PDFS_DIR)
+        
+        print(f"Chunking {len(docs)} documents...")
+        chunks = chunk_documents(docs)
+        
+        print(f"Creating vector store from {len(chunks)} chunks...")
+        pipeline = create_rag_pipeline(load_existing=False)
+        pipeline.vector_store.create_from_documents(chunks)
+        
+        print(f"Saving index to {VECTOR_STORE_PATH}...")
+        pipeline.vector_store.save(VECTOR_STORE_PATH)
+    
+    # Answer query
+    print(f"\nAnswering: {query}\n")
+    answer = pipeline.answer_query(query)
+    
+    return answer
 
 
 if __name__ == "__main__":
-    print("RAG query pipeline ready.")
-    answer = run_rag_query("What is common infection?")
-    print("\nAnswer:\n", answer)
+    # Example usage
+    query = "What is a common infection?"
+    answer = run_rag_query(query, load_from_disk=False)
+    
+    print("Question:", query)
+    print("\nAnswer:")
+    print(answer)
