@@ -1,3 +1,19 @@
+<<<<<<< HEAD
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+
+def create_vector_store(chunks):
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    vectorstore = FAISS.from_documents(
+        documents=chunks,
+        embedding=embeddings
+    )
+
+    return vectorstore
+=======
 from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
 
@@ -21,3 +37,4 @@ def search_vector_store(vector_store, query, k=5):
     print(f"Retrieved {len(results)} results")
 
     return results
+>>>>>>> arjun-dev
