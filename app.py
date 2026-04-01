@@ -125,19 +125,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-@st.cache_resource
-def load_pipeline():
-    """Load RAG pipeline (cached)."""
-    try:
-        return load_rag_pipeline(VECTOR_STORE_PATH)
-    except (FileNotFoundError, RuntimeError, Exception):
-        return None
-
-
 def vector_store_exists():
     """Check if vector store exists."""
     index_path = os.path.join(VECTOR_STORE_PATH, "faiss_index.faiss")
-    return os.path.exists(index_path)
+    exists = os.path.exists(index_path)
+    return exists
+
+
+@st.cache_resource
+def load_pipeline():
+    """Load RAG pipeline (cached only if vector store exists)."""
+    if not vector_store_exists():
+        return None
+    try:
+        return load_rag_pipeline(VECTOR_STORE_PATH)
+    except (FileNotFoundError, RuntimeError, Exception) as e:
+        st.error(f"Error loading pipeline: {str(e)}")
+        return None
 
 
 def get_document_stats():
@@ -162,8 +166,10 @@ def main():
         </div>
     """, unsafe_allow_html=True)
     
-    # Check if vector store exists
-    if not vector_store_exists():
+    # Check if vector store exists - don't use cache for this check
+    has_vector_store = vector_store_exists()
+    
+    if not has_vector_store:
         # Show setup page
         st.warning("⚠️ Vector store not initialized", icon="⚠️")
         st.markdown("""
@@ -186,7 +192,7 @@ def main():
             ```
             
             #### 3️⃣ Refresh the App
-            Once indexing is complete, refresh this page. You'll then be able to ask questions!
+            Once indexing is complete, refresh this page in your browser (F5 or Cmd+R). You'll then be able to ask questions!
             
             ---
             
@@ -201,6 +207,12 @@ def main():
             - 📚 View indexed documents in the **Documents** page
             - 📤 Upload new PDFs in the **Upload PDF** page
         """)
+        
+        # Add a refresh button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🔄 Check for Vector Store", use_container_width=True):
+                st.rerun()
         return
     
     # Sidebar navigation
@@ -217,12 +229,14 @@ def main():
     stats = get_document_stats()
     st.sidebar.metric("Documents", stats["count"])
     st.sidebar.metric("Total Size", f"{stats['total_size_mb']} MB")
+    st.sidebar.markdown("### ✅ Vector Store")
+    st.sidebar.success("Initialized & Ready", icon="✅")
     
     # Load pipeline
     pipeline = load_pipeline()
     
     if pipeline is None:
-        st.error("❌ Error loading pipeline. Please check your vector store.")
+        st.error("❌ Error loading pipeline. Please check your vector store or re-index documents.")
         st.stop()
     
     # PAGE 1: Ask Questions
