@@ -8,6 +8,7 @@ Run with: streamlit run app.py
 import streamlit as st
 import sys
 import os
+import re
 from pathlib import Path
 
 # Add parent directory to path
@@ -18,6 +19,11 @@ from src.pdf_loader import load_medical_pdfs
 from src.chunking import chunk_documents
 from src.loaders import PDFUploadHandler
 from src.utils.config import VECTOR_STORE_PATH, MEDICAL_PDFS_DIR
+
+
+# Constants for validation
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+ALLOWED_EXTENSIONS = ['pdf']
 
 
 # Page configuration
@@ -86,6 +92,27 @@ def get_document_stats():
         "total_size_mb": handler.get_total_size_mb(),
         "pdfs": pdfs
     }
+
+
+def validate_uploaded_file(uploaded_file) -> tuple[bool, str]:
+    """Validate uploaded file for security and size."""
+    if uploaded_file is None:
+        return False, "No file selected"
+    
+    # Check file size
+    if uploaded_file.size > MAX_FILE_SIZE:
+        return False, f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB"
+    
+    # Check file extension
+    if not uploaded_file.name.lower().endswith('.pdf'):
+        return False, "Only PDF files are allowed"
+    
+    # Sanitize filename
+    safe_name = re.sub(r'[^\w\.\-\s]', '', uploaded_file.name)
+    if safe_name != uploaded_file.name:
+        return False, "Filename contains invalid characters"
+    
+    return True, safe_name
 
 
 def main():
@@ -258,14 +285,20 @@ def main():
                 st.write(f"📄 Selected file: **{uploaded_file.name}**")
                 st.write(f"📊 File size: **{uploaded_file.size / (1024*1024):.2f} MB**")
                 
+                # Validate file
+                is_valid, message = validate_uploaded_file(uploaded_file)
+                if not is_valid:
+                    st.error(f"❌ {message}")
+                    return
+                
                 if st.button("✅ Upload", type="primary", use_container_width=True):
-                    # Save uploaded file
-                    save_path = os.path.join(MEDICAL_PDFS_DIR, uploaded_file.name)
+                    # Save uploaded file with safe name
+                    save_path = os.path.join(MEDICAL_PDFS_DIR, message)  # message is safe_name
                     
                     with open(save_path, "wb") as f:
                         f.write(uploaded_file.getbuffer())
                     
-                    st.success(f"✅ Successfully uploaded {uploaded_file.name}")
+                    st.success(f"✅ Successfully uploaded {message}")
                     
                     st.markdown("### 🔄 Next Steps")
                     st.info(
