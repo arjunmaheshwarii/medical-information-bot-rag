@@ -115,9 +115,9 @@ class RAGPipeline:
         query: str,
         template_name: str = "qa",
         top_k: int = None,
-    ) -> Tuple[str, List[Document]]:
+    ) -> Tuple[str, List[Dict]]:
         """
-        Answer query and return both answer and retrieved documents.
+        Answer query and return both answer and retrieved documents with confidence.
         
         Useful for debugging or displaying source documents to users.
         
@@ -127,7 +127,8 @@ class RAGPipeline:
             top_k (int): Number of documents to retrieve
         
         Returns:
-            Tuple[str, List[Document]]: (answer, retrieved_documents)
+            Tuple[str, List[Dict]]: (answer, sources_with_confidence)
+                                   sources format: [{"content": str, "source": str, "confidence": float}]
         
         Example:
             >>> pipeline = RAGPipeline()
@@ -140,11 +141,24 @@ class RAGPipeline:
         if top_k is None:
             top_k = self.top_k
         
-        # Retrieve documents
-        retrieved_docs = self.retriever.retrieve(query, k=top_k)
+        # Retrieve documents with scores
+        docs, scores = self.retriever.retrieve(query, k=top_k)
         
-        # Extract context
-        context = "\n\n".join(doc.page_content for doc in retrieved_docs)
+        if not docs:
+            return "I don't have sufficient information to answer this question.", []
+        
+        # Build context with scores
+        context_parts = []
+        sources = []
+        for i, (doc, score) in enumerate(zip(docs, scores)):
+            context_parts.append(f"Document {i+1} (confidence: {score:.3f}):\n{doc.page_content}")
+            sources.append({
+                "content": doc.page_content[:200] + "...",
+                "source": doc.metadata.get("source", "Unknown"),
+                "confidence": score
+            })
+        
+        context = "\n\n".join(context_parts)
         
         # Generate answer
         answer = self.llm.generate(
@@ -153,7 +167,7 @@ class RAGPipeline:
             template_name=template_name,
         )
         
-        return answer, retrieved_docs
+        return answer, sources
     
     def update_config(self, **kwargs) -> None:
         """

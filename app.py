@@ -190,12 +190,11 @@ def main():
                             st.markdown("### 📚 Source Documents")
                             st.info(f"Retrieved {len(sources)} relevant documents")
                             
-                            for i, doc in enumerate(sources, 1):
-                                with st.expander(f"📄 Source {i}", expanded=(i==1)):
-                                    if doc.metadata:
-                                        st.caption(f"**Source:** {doc.metadata.get('source', 'Unknown')}")
+                            for i, source in enumerate(sources, 1):
+                                with st.expander(f"📄 Source {i} (Confidence: {source['confidence']:.2f})", expanded=(i==1)):
+                                    st.caption(f"**Source:** {source['source']}")
                                     st.markdown(
-                                        f'<div class="source-box"><p>{doc.page_content}</p></div>',
+                                        f'<div class="source-box"><p>{source["content"]}</p></div>',
                                         unsafe_allow_html=True
                                     )
                         else:
