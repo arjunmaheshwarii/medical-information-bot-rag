@@ -28,18 +28,15 @@ class Retriever:
         Initialize retriever with a vector store.
         
         Args:
-            vector_store (FAISSVectorStore): Initialized vector store instance
+            vector_store (FAISSVectorStore): Vector store instance (can be uninitialized)
             default_k (int): Default number of documents to retrieve
         """
-        if vector_store.index is None:
-            raise ValueError("Vector store must be initialized before creating Retriever")
-        
         self.vector_store = vector_store
         self.default_k = default_k
     
-    def retrieve(self, query: str, k: int = None) -> List[Document]:
+    def retrieve(self, query: str, k: int = None) -> Tuple[List[Document], List[float]]:
         """
-        Retrieve top-k documents most similar to query.
+        Retrieve top-k documents most similar to query with confidence scores.
         
         Args:
             query (str): Query text
@@ -47,17 +44,34 @@ class Retriever:
                     If None, uses default_k
         
         Returns:
-            List[Document]: List of retrieved documents
+            Tuple[List[Document], List[float]]: Documents and their confidence scores
             
         Example:
-            >>> retriever = Retriever(vector_store, default_k=5)
-            >>> docs = retriever.retrieve("What is diabetes?", k=3)
+            >>> docs, scores = retriever.retrieve("What is diabetes?", k=3)
             >>> print(f"Retrieved {len(docs)} documents")
         """
+        if self.vector_store.index is None:
+            raise RuntimeError("Vector store index not initialized. Create index before retrieving.")
+        
         if k is None:
             k = self.default_k
         
-        return self.vector_store.similarity_search(query, k=k)
+        # Get more results than needed for re-ranking
+        search_k = min(k * 2, self.vector_store.index.ntotal) if k else None
+        
+        results = self.vector_store.similarity_search_with_scores(query, k=search_k)
+        
+        # Filter by confidence threshold
+        filtered_results = []
+        scores = []
+        for doc, score in results:
+            if score > 0.1:  # Minimum confidence threshold
+                filtered_results.append(doc)
+                scores.append(score)
+                if len(filtered_results) >= (k or 5):
+                    break
+        
+        return filtered_results[:k] if k else filtered_results, scores[:k] if k else scores
     
     def retrieve_with_scores(
         self, 

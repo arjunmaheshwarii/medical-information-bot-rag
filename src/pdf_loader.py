@@ -42,9 +42,9 @@ def load_medical_pdfs(pdf_dir: str = MEDICAL_PDFS_DIR) -> List[Document]:
             loader = PyPDFLoader(pdf_path)
             docs = loader.load()
             documents.extend(docs)
-            print(f"✓ Loaded {pdf_file} ({len(docs)} pages)")
+            print(f"[OK] Loaded {pdf_file} ({len(docs)} pages)")
         except Exception as e:
-            print(f"✗ Error loading {pdf_file}: {str(e)}")
+            print(f"[ERROR] Error loading {pdf_file}: {str(e)}")
 
     return documents
 
@@ -68,4 +68,4 @@ def load_single_pdf(file_path: str) -> List[Document]:
 
 if __name__ == "__main__":
     docs = load_medical_pdfs(MEDICAL_PDFS_DIR)
-    print(f"✓ Loaded {len(docs)} pages from medical PDFs")
+    print(f"[OK] Loaded {len(docs)} pages from medical PDFs")

@@ -58,7 +58,7 @@ class FlanT5Model:
         # Set to evaluation mode
         self.model.eval()
         
-        print(f"✓ Model loaded successfully on {self.device}")
+        print(f"[OK] Model loaded successfully on {self.device}")
     
     def generate(
         self,
