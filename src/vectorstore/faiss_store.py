@@ -156,7 +156,7 @@ class FAISSVectorStore:
                 "id_to_doc": self.id_to_doc,
             }, f)
         
-        print(f"✓ Vector store saved: {index_file}, {metadata_file}")
+        print(f"[OK] Vector store saved: {index_file}, {metadata_file}")
     
     def load(self, load_path: str = VECTOR_STORE_PATH) -> "FAISSVectorStore":
         """
@@ -180,7 +180,7 @@ class FAISSVectorStore:
             self.documents_metadata = data["documents_metadata"]
             self.id_to_doc = data["id_to_doc"]
         
-        print(f"✓ Vector store loaded: {index_file}, {metadata_file}")
+        print(f"[OK] Vector store loaded: {index_file}, {metadata_file}")
         return self
     
     def get_index_stats(self) -> Dict[str, Any]:

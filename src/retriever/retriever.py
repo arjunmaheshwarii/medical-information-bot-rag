@@ -28,12 +28,9 @@ class Retriever:
         Initialize retriever with a vector store.
         
         Args:
-            vector_store (FAISSVectorStore): Initialized vector store instance
+            vector_store (FAISSVectorStore): Vector store instance (can be uninitialized)
             default_k (int): Default number of documents to retrieve
         """
-        if vector_store.index is None:
-            raise ValueError("Vector store must be initialized before creating Retriever")
-        
         self.vector_store = vector_store
         self.default_k = default_k
     
@@ -54,6 +51,9 @@ class Retriever:
             >>> docs = retriever.retrieve("What is diabetes?", k=3)
             >>> print(f"Retrieved {len(docs)} documents")
         """
+        if self.vector_store.index is None:
+            raise RuntimeError("Vector store index not initialized. Create index before retrieving.")
+        
         if k is None:
             k = self.default_k
         
