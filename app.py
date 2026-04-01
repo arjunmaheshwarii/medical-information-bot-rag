@@ -131,7 +131,18 @@ def vector_store_exists():
     index_file = os.path.join(VECTOR_STORE_PATH.replace("/faiss_index", ""), "faiss_index.faiss")
     pkl_file = os.path.join(VECTOR_STORE_PATH.replace("/faiss_index", ""), "faiss_index.pkl")
     
-    return os.path.exists(index_file) and os.path.exists(pkl_file)
+    index_exists = os.path.exists(index_file)
+    pkl_exists = os.path.exists(pkl_file)
+    
+    # Always return the fresh check (not cached)
+    return index_exists and pkl_exists
+
+
+# Clear Streamlit cache on app startup
+if "app_started" not in st.session_state:
+    st.session_state.app_started = True
+    # Clear all cached functions
+    st.cache_resource.clear()
 
 
 @st.cache_resource
@@ -174,47 +185,40 @@ def main():
     if not has_vector_store:
         # Show setup page
         st.warning("⚠️ Vector store not initialized", icon="⚠️")
-        st.markdown("""
-            ### 🚀 Getting Started
-            
-            Before you can ask questions, you need to index your medical documents.
-            
-            **Follow these steps:**
-            
-            #### 1️⃣ Add Medical PDFs
-            Upload your medical PDF files to the `data/medical_pdfs/` directory or use the CLI:
-            ```bash
-            cp your_medical_documents.pdf data/medical_pdfs/
-            ```
-            
-            #### 2️⃣ Index Documents
-            Run the indexing script in your terminal:
-            ```bash
-            python scripts/index_medical_documents.py
-            ```
-            
-            #### 3️⃣ Refresh the App
-            Once indexing is complete, refresh this page in your browser (F5 or Cmd+R). You'll then be able to ask questions!
-            
-            ---
-            
-            ### 📊 About Vector Store
-            - **Location:** `data/vector_store/faiss_index.faiss`
-            - **Purpose:** Stores document embeddings for fast semantic search
-            - **Status:** ❌ Not initialized
-            
-            ### 💡 What's Next?
-            After indexing:
-            - 🔍 Use the **Ask Questions** page to query your documents
-            - 📚 View indexed documents in the **Documents** page
-            - 📤 Upload new PDFs in the **Upload PDF** page
-        """)
         
-        # Add a refresh button
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.error("**Vector Store Status: ❌ Not Found**", icon="❌")
+            st.info("""
+                If you already indexed your documents, try these solutions:
+                
+                1. **Hard refresh browser:** Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+                2. **Click button below** to check again
+                3. **Close this tab** and open a new one to the URL
+            """)
+        
+        with col2:
+            st.info("""
+                **If you haven't indexed yet:**
+                
+                Run this command in terminal:
+                ```bash
+                python scripts/index_medical_documents.py
+                ```
+                
+                Then refresh the browser after it completes.
+            """)
+        
+        st.markdown("---")
+        
+        # Check button
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🔄 Check for Vector Store", use_container_width=True):
+            if st.button("🔄 Refresh & Check Again", use_container_width=True, type="primary"):
+                st.cache_resource.clear()
                 st.rerun()
+        
         return
     
     # Sidebar navigation
